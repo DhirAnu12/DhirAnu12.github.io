@@ -1,0 +1,1264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tree — Skill Tracker</title>
+<style>
+  :root {
+    --bg: #0B0D12; --surface: #12151C; --surface-2: #0F1116; --raised: #1E222C;
+    --line: #232733; --line-soft: #1C1F27;
+    --text: #E8EAED; --text-2: #C4C9D2; --muted: #8B93A3; --muted-2: #636A7A;
+    --teal: #4FD1C5; --gold: #E3B341; --green: #34D399; --red: #F87171; --violet: #A78BFA;
+    --radius: 10px;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 Inter, -apple-system, "Segoe UI", system-ui, sans-serif; }
+  body.noscroll { overflow: hidden; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  a { color: var(--teal); }
+  :focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+  h1, h2, h3 { line-height: 1.25; }
+  .hidden-input { display: none; }
+
+  /* ---------- layout ---------- */
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 20px 64px; }
+  .top { position: sticky; top: 0; z-index: 20; background: rgba(11,13,18,.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line-soft); }
+  .top-in { max-width: 1180px; margin: 0 auto; padding: 12px 20px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 10px; margin-right: auto; }
+  .brand b { display: block; font-size: 16px; letter-spacing: .02em; }
+  .brand small { display: block; font-size: 12px; color: var(--muted); }
+  .tabs { display: flex; gap: 2px; background: var(--surface); border: 1px solid var(--line); border-radius: 9px; padding: 3px; }
+  .tab { background: none; border: 0; border-radius: 7px; padding: 6px 14px; color: var(--muted); font-weight: 600; font-size: 13.5px; }
+  .tab.on { background: var(--raised); color: var(--text); }
+  .top-actions { display: flex; gap: 8px; }
+
+  /* ---------- primitives ---------- */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 14px; font-size: 13.5px; font-weight: 600; color: var(--text-2); white-space: nowrap; }
+  .btn:hover { border-color: #3A4050; color: var(--text); }
+  .btn-primary { background: var(--teal); border-color: var(--teal); color: #0B0D12; }
+  .btn-primary:hover { filter: brightness(1.08); color: #0B0D12; border-color: var(--teal); }
+  .btn-warn { color: var(--gold); border-color: rgba(227,179,65,.45); }
+  .btn-danger { color: var(--red); border-color: rgba(248,113,113,.4); }
+  .btn-danger.solid { background: var(--red); color: #0B0D12; border-color: var(--red); }
+  .btn-ghost { background: none; border-color: transparent; color: var(--muted); }
+  .btn-sm { padding: 5px 10px; font-size: 12.5px; }
+  .btn:disabled { opacity: .45; cursor: default; }
+  .btn-block { width: 100%; padding: 11px; }
+  .linklike { background: none; border: 0; padding: 0; color: var(--teal); text-decoration: underline; font-weight: 600; }
+  .eyebrow { font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted-2); font-weight: 700; margin: 0 0 10px; }
+  .muted { color: var(--muted); }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; }
+  .card h3 { margin: 0 0 4px; font-size: 15px; }
+  .bar { display: block; height: 6px; background: #1A1E27; border-radius: 99px; overflow: hidden; flex: 1; min-width: 40px; }
+  .bar i { display: block; height: 100%; border-radius: inherit; transition: width .4s ease; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; }
+  .badge::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .input { width: 100%; background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; font-size: 14px; color: var(--text); }
+  .input:focus { border-color: #3A4050; }
+  textarea.input { resize: vertical; min-height: 84px; line-height: 1.5; }
+  select.input { cursor: pointer; }
+  .row { display: flex; gap: 8px; }
+  .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+  .label { font-size: 13.5px; font-weight: 600; color: var(--text-2); }
+  .hint { font-size: 12.5px; color: var(--muted); margin: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 7px; }
+  .chip { background: var(--surface-2); border: 1px solid var(--line); border-radius: 99px; padding: 6px 13px; font-size: 13px; font-weight: 600; color: var(--text-2); }
+  .chip:hover { border-color: #3A4050; }
+  .chip.on { background: var(--teal); border-color: var(--teal); color: #0B0D12; }
+  input[type=range] { width: 100%; accent-color: var(--teal); }
+
+  /* ---------- suggestions ---------- */
+  .suggest { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; margin: 20px 0 26px; }
+  .tip { display: flex; gap: 12px; text-align: left; background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--radius); padding: 12px 14px; color: var(--text-2); font-size: 13.5px; }
+  .tip:hover { border-color: var(--line); }
+  .tip .ico { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; flex-shrink: 0; font-size: 15px; font-weight: 700; background: color-mix(in srgb, var(--c) 16%, transparent); color: var(--c); }
+  .tip b { display: block; color: var(--text); font-size: 13.5px; margin-bottom: 1px; }
+
+  /* ---------- tree ---------- */
+  .tree-layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 28px; align-items: start; }
+  .goal-card { display: block; width: 100%; text-align: left; background: var(--surface-2); border: 1px solid var(--line-soft); border-left: 3px solid var(--accent); border-radius: 9px; padding: 11px 13px; margin-bottom: 8px; opacity: .8; }
+  .goal-card:hover { opacity: 1; }
+  .goal-card.on { background: var(--surface); border-color: var(--accent); opacity: 1; }
+  .goal-name { display: block; font-weight: 700; font-size: 14px; color: var(--accent); }
+  .goal-meta { display: block; font-size: 12px; color: var(--muted-2); margin: 2px 0 8px; }
+  .tree-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+  .tree-head h2 { margin: 0; font-size: 21px; color: var(--accent); }
+  .tree-head p { margin: 2px 0 0; font-size: 13px; }
+  .tree, .tree ul { list-style: none; margin: 0; padding: 0; }
+  .tree ul { margin-left: 14px; padding-left: 16px; border-left: 1px solid var(--line); }
+  .node { display: block; width: 100%; text-align: left; background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 9px; padding: 11px 14px; margin-bottom: 8px; transition: border-color .15s; }
+  .node:hover { border-color: var(--accent); }
+  .node.locked { background: var(--surface-2); border-color: var(--line-soft); border-left-color: var(--line); }
+  .node.locked .node-name { color: var(--muted); }
+  .node-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .node-name { font-weight: 600; font-size: 14.5px; display: flex; align-items: center; gap: 7px; min-width: 0; }
+  .node-sub { display: block; font-size: 12.5px; color: var(--muted-2); margin-top: 4px; }
+  .node-bar { display: flex; align-items: center; gap: 10px; margin-top: 9px; }
+  .pct { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; min-width: 34px; text-align: right; }
+  .due { display: inline-block; margin-top: 7px; font-size: 12px; font-weight: 700; color: var(--red); }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 18px; font-size: 12.5px; color: var(--muted); }
+  .empty { border: 1px dashed var(--line); border-radius: var(--radius); padding: 28px; text-align: center; color: var(--muted); }
+
+  /* ---------- skill panel ---------- */
+  .scrim { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 40; }
+  .panel { position: fixed; top: 0; right: 0; bottom: 0; width: min(640px, 100vw); background: #0D0F14; border-left: 1px solid var(--line); z-index: 41; display: flex; flex-direction: column; box-shadow: -20px 0 60px rgba(0,0,0,.5); }
+  .panel.anim { animation: slide .22s ease-out; }
+  @keyframes slide { from { transform: translateX(32px); opacity: 0; } }
+  .panel-head { padding: 18px 22px; border-bottom: 1px solid var(--line-soft); display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+  .panel-head .goal-tag { font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--accent); }
+  .panel-head h2 { margin: 3px 0 6px; font-size: 21px; }
+  .panel-body { flex: 1; overflow-y: auto; padding: 20px 22px 48px; display: flex; flex-direction: column; gap: 18px; }
+  .icon-btn { background: none; border: 0; color: var(--muted); font-size: 24px; line-height: 1; padding: 2px 8px; border-radius: 6px; }
+  .icon-btn:hover { color: var(--text); background: var(--surface); }
+  .desc { margin: 0; color: var(--text-2); }
+  .links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .links a { font-size: 13px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 7px; padding: 6px 12px; text-decoration: none; }
+  .links a:hover { border-color: var(--teal); }
+  .checks { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .checks li { display: flex; align-items: center; gap: 10px; font-size: 13.5px; color: var(--text-2); }
+  .checks .ck { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--line); display: grid; place-items: center; font-size: 11px; font-weight: 800; flex-shrink: 0; }
+  .checks li.ok .ck { background: var(--green); border-color: var(--green); color: #0B0D12; }
+  .checks li.ok { color: var(--muted); }
+  .checks .v { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--muted); font-size: 12.5px; }
+  .locked-box { border: 1px dashed var(--line); border-radius: var(--radius); padding: 16px; }
+  .locked-box b { display: block; margin-bottom: 2px; }
+  .win { background: color-mix(in srgb, var(--green) 10%, transparent); border: 1px solid color-mix(in srgb, var(--green) 35%, transparent); color: var(--green); border-radius: var(--radius); padding: 12px 14px; font-size: 13.5px; }
+  .note-small { font-size: 12.5px; color: var(--muted); margin: 10px 0 0; }
+
+  .form h3 { font-size: 16px; }
+  .step { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; padding: 16px 0 4px; border-top: 1px solid var(--line-soft); margin-top: 12px; }
+  .num { width: 26px; height: 26px; border-radius: 50%; background: var(--raised); display: grid; place-items: center; font-size: 12.5px; font-weight: 700; color: var(--muted); }
+  .opt { font-weight: 500; color: var(--muted-2); font-size: 12.5px; }
+  .prompt { background: var(--surface-2); border-left: 3px solid var(--violet); border-radius: 6px; padding: 9px 12px; font-size: 13.5px; color: var(--text-2); margin: 0 0 10px; }
+  .slider-row { display: flex; align-items: center; gap: 12px; }
+  .slider-row output { min-width: 150px; font-size: 13px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+  .num-input { width: 110px; }
+  .preview { background: var(--surface-2); border: 1px dashed var(--line); border-radius: 9px; padding: 12px 14px; font-size: 13.5px; margin: 16px 0 12px; color: var(--text-2); }
+  .preview b { color: var(--teal); }
+  .preview .warn { display: block; color: var(--gold); margin-top: 4px; font-size: 13px; }
+  .preview .extra { display: block; color: var(--muted); margin-top: 4px; font-size: 13px; }
+  .history { display: flex; flex-direction: column; gap: 6px; }
+  .history div { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; background: var(--surface); border: 1px solid var(--line-soft); border-radius: 7px; padding: 8px 11px; color: var(--muted); }
+  .history .g { color: var(--teal); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .conn { font-size: 13px; color: var(--text-2); margin: 4px 0; }
+  .conn span { color: var(--muted); }
+
+  /* ---------- modal ---------- */
+  .modal-wrap { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 20px; background: rgba(0,0,0,.6); }
+  .modal { width: min(500px, 100%); max-height: calc(100vh - 40px); overflow-y: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 24px; }
+  .modal.anim { animation: pop .18s ease-out; }
+  @keyframes pop { from { transform: scale(.97); opacity: 0; } }
+  .modal-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 6px; }
+  .modal-head h3 { margin: 0; font-size: 18px; }
+  .modal p.lead { margin: 0 0 16px; color: var(--muted); font-size: 13.5px; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+
+  /* ---------- progress & notes ---------- */
+  .page-head h2 { margin: 24px 0 2px; font-size: 21px; }
+  .page-head p { margin: 0 0 20px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .stat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; }
+  .stat .k { font-size: 12.5px; color: var(--muted); font-weight: 600; }
+  .stat .v { font-size: 27px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .stat .s { font-size: 12px; color: var(--muted-2); margin-top: 2px; }
+  .stack { display: flex; flex-direction: column; gap: 18px; }
+  .chart { width: 100%; height: auto; display: block; margin-top: 10px; }
+  .chart text { fill: var(--muted); font-size: 11px; font-family: inherit; }
+  .goal-row { display: grid; grid-template-columns: minmax(120px, 220px) 1fr 44px auto; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line-soft); }
+  .goal-row:first-of-type { border-top: 0; }
+  .goal-row .n { font-weight: 600; font-size: 14px; }
+  .goal-row .n small { display: block; color: var(--muted-2); font-weight: 500; font-size: 12px; }
+  .notes-filters { display: flex; gap: 10px; margin-bottom: 18px; }
+  .notes-filters select { width: 220px; flex-shrink: 0; }
+  .note { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px; }
+  .note-head { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+  .note-head .linklike { text-decoration: none; color: var(--text); font-size: 14.5px; }
+  .note-head .linklike:hover { text-decoration: underline; }
+  .note-head small { color: var(--muted-2); font-size: 12.5px; }
+  .note h4 { margin: 10px 0 3px; font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted-2); }
+  .note p { margin: 0; white-space: pre-wrap; color: var(--text-2); font-size: 13.5px; }
+
+  /* ---------- onboarding ---------- */
+  .onboard { min-height: 100vh; display: grid; place-items: center; padding: 40px 20px; }
+  .onboard-card { width: min(640px, 100%); }
+  .onboard h1 { font-size: 28px; margin: 26px 0 8px; }
+  .onboard .lead { color: var(--muted); margin: 0 0 22px; }
+  .onboard .chips { margin-bottom: 14px; }
+  .onboard .row { margin-bottom: 20px; }
+  .how { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 28px; }
+  .how div { background: var(--surface); border: 1px solid var(--line-soft); border-radius: var(--radius); padding: 14px; font-size: 13px; color: var(--muted); }
+  .how b { display: block; color: var(--text); font-size: 14px; margin-bottom: 3px; }
+  .how i { font-style: normal; color: var(--teal); font-weight: 800; margin-right: 6px; }
+  .fine { font-size: 13px; color: var(--muted); margin-top: 22px; text-align: center; }
+
+  /* ---------- toast ---------- */
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 16px); opacity: 0; background: var(--raised); border: 1px solid var(--line); color: var(--text); padding: 11px 18px; border-radius: 10px; font-size: 14px; z-index: 80; transition: opacity .25s, transform .25s; pointer-events: none; max-width: calc(100vw - 32px); box-shadow: 0 10px 30px rgba(0,0,0,.4); }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  @media (max-width: 760px) {
+    .tree-layout { grid-template-columns: 1fr; gap: 16px; }
+    .goal-list { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+    .goal-list .eyebrow { display: none; }
+    .goal-card { min-width: 170px; margin-bottom: 0; }
+    .how { grid-template-columns: 1fr; }
+    .brand small { display: none; }
+    .goal-row { grid-template-columns: 1fr 44px auto; }
+    .goal-row .bar { grid-column: 1 / -1; grid-row: 2; }
+    .notes-filters { flex-direction: column; }
+    .notes-filters select { width: 100%; }
+    .slider-row { flex-direction: column; align-items: stretch; gap: 4px; }
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<input type="file" id="import-file" class="hidden-input" accept=".json,application/json">
+<input type="file" id="notes-file" class="hidden-input" accept=".txt,.md,.markdown,text/plain">
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<noscript><p style="padding:24px">Tree needs JavaScript turned on.</p></noscript>
+
+<script>
+"use strict";
+
+/* ====================================================================== */
+/* SKILL LIBRARY — ready-made trees for common goals                       */
+/* [id, name, builds-on id, description, self-test, explain-it prompt]     */
+/* ====================================================================== */
+
+const LIB = {
+  "Computer Science": { accent: "#4FD1C5", sub: "Systems & code literacy", skills: [
+    ["c1", "Programming Foundations (Python/Java)", null, "Clean, fast, correct code as a base reflex — everything else in CS builds on this.", "Solve a small program from a spec in 10 minutes, no lookup.", "Explain a function you wrote as if the listener has never coded."],
+    ["c2", "Data Structures & Algorithms", "c1", "The reasoning patterns behind efficient code.", "Solve a medium algorithm problem and state its time complexity in 10 minutes.", "Explain Big-O as if the listener is 12."],
+    ["c3", "Systems Design & Backend Architecture", "c2", "How real services are structured.", "Sketch a simple service architecture in 10 minutes.", "Explain the trade-off between SQL and NoSQL for a specific use case."],
+  ]},
+  "Finance & Markets": { accent: "#E3B341", sub: "Market structure literacy", skills: [
+    ["f1", "Market Structure Fundamentals", null, "How orders actually move through exchanges. The floor everything else stands on.", "Explain how an order goes from click to fill in 90 seconds, and name the venue it likely routed to.", "Walk through what happens between hitting 'buy' and getting a fill, venue by venue."],
+    ["f2", "IPO Mechanics", "f1", "Float, lockups, and pricing at issuance.", "Given an S-1 summary, list 3 real risks in 3 minutes.", "Explain the IPO process as if the listener is 12."],
+    ["f3", "Auction Mechanics & Order Types", "f1", "Opening/closing auctions, limit vs market, midpoint pegs.", "Explain a closing auction imbalance and what it signals, in 90 seconds.", "Describe the difference between a market order and a pegged order to someone who's never traded."],
+    ["f4", "Index Rebalancing & Fund Flows", "f2", "How index funds mechanically buy and sell on rebalance days.", "Explain why a stock added to an index often rallies before the effective date, in 90 seconds.", "Explain passive fund flow mechanics on rebalance day."],
+    ["f5", "Dark Pools & Liquidity", "f3", "Off-exchange liquidity and what it hides from the tape.", "Explain why a large order might route to a dark pool first, in 90 seconds.", "Explain dark pool liquidity as if the listener is 12."],
+    ["f6", "Fed Policy & Rate Cycles", "f4", "How rate decisions ripple into market flows.", "Explain how a rate decision reaches equity flows, in 90 seconds.", "Walk through how a 0.25% rate hike moves through markets."],
+  ]},
+  "Trading": { accent: "#F97316", sub: "Valuation & quant edge", skills: [
+    ["t1", "Valuation & Quant Foundations", null, "The numerical backbone: financial statements, DCF, probability.", "Build a 3-line valuation sanity check for a stock in 3 minutes.", "Explain why valuation matters even for a flow-driven trade."],
+    ["t2", "Financial Statement Analysis", "t1", "Reading 10-Ks and 10-Qs for signal, fast.", "Spot 3 red flags in an income statement in 3 minutes.", "Explain the 3 financial statements and how they connect."],
+    ["t3", "DCF & Relative Valuation", "t2", "Building a defensible price target two ways and reconciling them.", "Build and defend a one-page DCF in 5 minutes.", "Explain why DCF and comparables often disagree."],
+    ["t4", "Options & Probability (Greeks)", "t1", "Delta, gamma and theta as probability statements, not jargon.", "Explain delta as a probability in 90 seconds.", "Explain gamma to someone who understands delta but not gamma."],
+  ]},
+  "AI / Machine Learning": { accent: "#22D3EE", sub: "Model literacy", skills: [
+    ["ai1", "ML / Neural Net Fundamentals", null, "What's actually happening inside a model.", "Explain backpropagation in 90 seconds without hand-waving.", "Explain a neural network as if the listener is 12."],
+    ["ai2", "LLM APIs & Agent Systems", "ai1", "Building tools on top of language models — API calls, tool use, agent loops.", "Explain a tool-use loop end to end in 90 seconds.", "Explain precisely what an 'agent' is."],
+  ]},
+  "Habits & Discipline": { accent: "#FB923C", sub: "The foundation everything runs on", skills: [
+    ["h1", "Morning Routine & Environment Design", null, "An environment that makes hard starts automatic instead of willpower-dependent.", "Describe your current morning routine and its single weakest link, in 90 seconds.", "Explain why environment beats willpower for building habits."],
+    ["h2", "Deep Work Block Execution", "h1", "Protected, high-quality focus blocks.", "Explain what makes a deep work block fail, in 90 seconds.", "Design a 90-minute deep work block for tomorrow, fully specified."],
+    ["h3", "Energy Management (Sleep/Nutrition/Training)", "h1", "The physical foundation for mental output.", "Explain how sleep debt shows up in decision quality, in 90 seconds.", "Review your last 3 nights of sleep against your training load."],
+    ["h4", "Identity-Based Habit Design", "h2", "Habits that stick because they're part of who you are, not willpower bets.", "State one identity-based habit and its cue, routine and reward, in 90 seconds.", "Rewrite one current habit as an identity statement."],
+  ]},
+  "Learning How to Learn": { accent: "#A78BFA", sub: "The learning engine itself", skills: [
+    ["m1", "Deliberate Practice Fundamentals", null, "The mechanism underneath every skill: focused reps, fast error correction, tight feedback loops.", "Explain the three stages of skill learning (thinking → practising → automatic) in 90 seconds.", "Explain why volume alone doesn't build skill."],
+    ["m2", "Feynman Technique", "m1", "Explaining a thing simply is the fastest way to find out you don't understand it.", "Explain any skill from your tree cold, in 90 seconds, with no notes.", "Pick your weakest skill and explain it simply right now."],
+    ["m3", "Spaced Retrieval & Interleaving", "m1", "Timing practice against forgetting instead of convenience.", "Explain why cramming underperforms spacing, in 90 seconds.", "Design a 2-week review schedule for one skill on your tree."],
+    ["m4", "Transfer Mapping", "m2", "Finding shared structure between skills so practising one helps another.", "Name 2 real shared sub-skills between any two of your goals, in 90 seconds.", "Find one connection between skills that your tree is missing and justify it."],
+  ]},
+  "Public Speaking": { accent: "#F472B6", sub: "Clear ideas, delivered live", skills: [
+    ["p1", "Structuring a Clear Talk", null, "Building a talk with one idea, a clean throughline, and a strong open and close.", "Outline a 5-minute talk on any topic in 3 minutes flat.", "Give the 60-second version of a talk you've outlined."],
+    ["p2", "Delivery Under Pressure", "p1", "Voice, pacing, and composure when nerves spike.", "Speak for 2 minutes on a random prompt with no filler words.", "Record yourself explaining something for 60 seconds, then critique your pacing."],
+    ["p3", "Reading the Audience & Q&A", "p2", "Reading a room and handling unscripted questions without losing the thread.", "Answer a hostile question in 30 seconds without getting defensive.", "Have someone throw you a tough question and answer it live."],
+  ]},
+  "Fitness & Strength": { accent: "#34D399", sub: "Strength that compounds", skills: [
+    ["fit1", "Progressive Overload Fundamentals", null, "The core principle behind every strength gain: small, trackable load increases.", "State your current working weight and next planned increase for 2 lifts.", "Explain progressive overload to someone who's never lifted."],
+    ["fit2", "Recovery & Load Management", "fit1", "Sleep, nutrition, and deload timing — what lets strength keep growing instead of stalling.", "Review last week's sleep and training load in 90 seconds.", "Plan a deload week based on how fatigued you are right now."],
+    ["fit3", "Movement Quality & Injury Prevention", "fit1", "Good form under fatigue — the difference between building strength and building injuries.", "Critique your own form on video for one main lift.", "Film a set and identify one technical breakdown."],
+  ]},
+  "Writing": { accent: "#93C5FD", sub: "Clear thinking on the page", skills: [
+    ["w1", "Clear Sentence Construction", null, "Cutting fog at the sentence level so ideas land the first time.", "Rewrite 3 bloated sentences into clean ones in 3 minutes.", "Explain what makes a sentence hard to read."],
+    ["w2", "Structuring an Argument", "w1", "Ordering ideas so each one earns the next.", "Outline a persuasive piece in 5 minutes flat.", "Explain your outline's throughline in 90 seconds."],
+    ["w3", "Editing & Cutting Ruthlessly", "w2", "Cutting your own draft by 30% without losing the point.", "Cut a paragraph by a third without losing meaning, in 5 minutes.", "Explain why you cut what you cut."],
+  ]},
+  "Career Growth": { accent: "#FBBF24", sub: "Visible, compounding impact", skills: [
+    ["cg1", "Communicating Impact (not just tasks)", null, "Framing your work in terms of outcomes, not activity.", "Turn a task list into 3 impact statements in 5 minutes.", "Explain your last project's impact in 90 seconds, with no jargon."],
+    ["cg2", "Negotiating & Advocating for Yourself", "cg1", "Making your case clearly without over- or under-selling.", "State your ask and your reasoning in under 60 seconds.", "Role-play asking for something you actually want."],
+    ["cg3", "Building a Visible Track Record", "cg1", "Making sure your impact is visible to the people who decide your next opportunity.", "List 3 pieces of evidence of your impact from the last month.", "Draft one update that makes a recent win visible."],
+  ]},
+  "Personal Finance": { accent: "#84CC16", sub: "Financial control & compounding", skills: [
+    ["pf1", "Budgeting & Cash Flow Control", null, "Knowing exactly where money goes before it goes there.", "State last month's cash flow within 10% accuracy, in 90 seconds.", "Explain your budget system to someone who doesn't have one."],
+    ["pf2", "Debt & Interest Rates", "pf1", "Understanding what debt actually costs you over time.", "Calculate the total interest on a loan by hand in 3 minutes.", "Explain why paying only the minimum is expensive."],
+    ["pf3", "Investing Fundamentals (Index/Retirement)", "pf1", "The basics of long-term, low-effort compounding.", "Explain index investing and fees in 90 seconds.", "Explain compound growth to someone skeptical of investing."],
+  ]},
+  "Music": { accent: "#C084FC", sub: "Playing without thinking", skills: [
+    ["mu1", "Rhythm & Timing Fundamentals", null, "Locking in with a steady pulse before anything else matters.", "Play or clap a pattern with a metronome for 60 seconds without drifting.", "Explain why timing matters more than speed early on."],
+    ["mu2", "Ear Training / Pitch Recognition", "mu1", "Hearing intervals and simple progressions without looking.", "Identify 3 intervals by ear in 2 minutes.", "Explain how you identified an interval you got right."],
+    ["mu3", "Playing Through Mistakes", "mu1", "The performance skill of recovering instead of restarting.", "Play a piece without stopping for any single mistake.", "Explain your recovery strategy after a mistake."],
+  ]},
+  "Language Learning": { accent: "#38BDF8", sub: "Real-time understanding & speech", skills: [
+    ["lg1", "High-Frequency Vocabulary Core", null, "The ~1000 words that cover most everyday conversation.", "Use 10 core words correctly in your own sentences in 3 minutes.", "Explain 3 words you learned this week, in the target language."],
+    ["lg2", "Listening at Native Speed", "lg1", "Understanding native-pace speech without slowing it down.", "Summarize a 60-second native-speed clip in 90 seconds.", "Explain what you understood vs. missed in a clip."],
+    ["lg3", "Speaking Without Translating in Your Head", "lg2", "Thinking directly in the target language instead of translating.", "Speak for 60 seconds on a simple topic with no English words.", "Describe, in the target language, what you did today."],
+  ]},
+};
+
+/* When the first skill reaches "Reliable", practising it also boosts the second. */
+const LINKS = [
+  ["f2", "t2", "reading financial documents", 0.4],
+  ["f2", "f5", "float & liquidity concepts", 0.25],
+  ["f3", "f4", "order flow & market mechanics", 0.4],
+  ["f4", "f6", "how macro moves fund flows", 0.25],
+  ["t2", "t3", "financial modelling", 0.4],
+  ["t4", "c2", "probability & combinatorial logic", 0.25],
+  ["c2", "ai1", "algorithmic thinking", 0.4],
+  ["ai1", "ai2", "understanding model architecture", 0.4],
+  ["m2", "f2", "short, clear explanations", 0.1],
+  ["m2", "c2", "short, clear explanations", 0.1],
+  ["m3", "t4", "recall under pressure", 0.1],
+  ["h2", "f2", "sustained focus", 0.1],
+  ["h2", "c2", "sustained focus", 0.1],
+  ["m4", "f5", "cross-domain pattern spotting", 0.25],
+];
+
+const ACCENTS = ["#4FD1C5", "#E3B341", "#A78BFA", "#FB923C", "#F472B6", "#38BDF8", "#34D399", "#F97316", "#C084FC", "#84CC16", "#FBBF24", "#93C5FD"];
+
+const STAGES = {
+  Locked:   { label: "Locked",   color: "var(--muted-2)" },
+  Learning: { label: "Learning", color: "var(--teal)" },
+  Reliable: { label: "Reliable", color: "var(--gold)" },
+  Mastered: { label: "Mastered", color: "var(--green)" },
+};
+
+const LOGO = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#4FD1C5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22v-8"/><path d="M12 14l-4-4"/><path d="M12 12l4-4"/><circle cx="12" cy="5" r="2.2"/><circle cx="7" cy="9" r="2.2"/><circle cx="17" cy="7" r="2.2"/></svg>`;
+const LOCK = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>`;
+
+const DAY = 86400000;
+const LONG_SCHEDULE = [1, 3, 7, 30, 90];   // review intervals (days) once a skill is Reliable+; repeats every 90
+const SHORT_SCHEDULE = [1, 3, 7, 30];      // while still Learning; stops after the 30-day check
+
+/* ====================================================================== */
+/* STATE — lives only in memory. Save file / Open file is the only way     */
+/* to keep progress between visits.                                        */
+/* ====================================================================== */
+
+function freshState() {
+  return {
+    goals: [], skills: [], connections: [], sessions: [],
+    tab: "tree", activeGoal: null, selectedId: null, modal: null,
+    draft: newDraft(), notesQuery: "", notesGoal: "all",
+    onboardPicks: [], onboardCustom: "",
+    dirty: false, _animPanel: false, _animModal: false, _resetScroll: false,
+  };
+}
+function newDraft() {
+  return { minutes: "30", notes: "", explain: "", quality: "5", test: "", project: "", projectNote: "" };
+}
+let state = freshState();
+
+/* ====================================================================== */
+/* HELPERS                                                                 */
+/* ====================================================================== */
+
+const $app = document.getElementById("app");
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const slug = (t) => t.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "goal";
+const uid = (prefix) => `${prefix}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+const byId = (id) => state.skills.find((s) => s.id === id);
+const goalByKey = (k) => state.goals.find((g) => g.key === k);
+const goalOf = (sk) => goalByKey(sk.goal) || { label: "", accent: "#4FD1C5", sub: "" };
+const skillsOf = (k) => state.skills.filter((s) => s.goal === k);
+const childrenOf = (id) => state.skills.filter((s) => s.parent_id === id);
+const activeGoal = () => goalByKey(state.activeGoal) || state.goals[0];
+const goalAvg = (k) => { const a = skillsOf(k); return a.length ? a.reduce((t, s) => t + s.mastery, 0) / a.length : 0; };
+const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
+const fmtTime = (m) => (m < 60 ? `${Math.round(m)}m` : `${(m / 60).toFixed(1)}h`);
+const fmtDate = (ts) => new Date(ts).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+const bar = (v, c) => `<span class="bar"><i style="width:${clamp(v, 0, 100)}%;background:${c}"></i></span>`;
+const badge = (st) => `<span class="badge" style="color:${STAGES[st].color}">${STAGES[st].label}</span>`;
+
+function makeSkill(id, name, goalKey, parentId, description, test, drill) {
+  return {
+    id, name, goal: goalKey, parent_id: parentId || null,
+    stage: parentId ? "Locked" : "Learning",
+    mastery: 0, best_test: 0, best_project: 0,
+    description, test, drill,
+    reliable_at: null, mastered_at: null, created_at: Date.now(),
+    review_step: 0, last_reviewed_at: null,
+  };
+}
+
+/* ====================================================================== */
+/* CORE MECHANICS                                                          */
+/* ====================================================================== */
+
+const isLongTerm = (sk) => sk.stage === "Reliable" || sk.stage === "Mastered";
+const canUnlockChildren = (p) => p.mastery >= 70 && p.best_project >= 80;
+
+// Mastery earned from a session. Explaining it in your own words earns full credit;
+// without that you get 30%. Gains shrink as you approach 100%.
+function computeGain(sk, d) {
+  const minutes = clamp(parseFloat(d.minutes) || 0, 0, 240);
+  const quality = clamp(parseFloat(d.quality) || 1, 1, 10);
+  const full = (d.explain || "").trim().length >= 20;
+  const raw = (quality / 10) * (minutes / 60) * 20 * (1 - sk.mastery / 100);
+  return { gain: full ? raw : raw * 0.3, full };
+}
+
+function updateStage(sk) {
+  if (sk.stage === "Locked" || sk.stage === "Mastered") return;
+  if (sk.mastery >= 70 && sk.best_test >= 80 && sk.best_project >= 80) {
+    if (sk.stage !== "Reliable") sk.reliable_at = Date.now();
+    sk.stage = "Reliable";
+  }
+  if (sk.stage === "Reliable" && sk.mastery >= 90 && sk.best_test >= 90) {
+    sk.stage = "Mastered";
+    sk.mastered_at = Date.now();
+  }
+}
+
+function recomputeUnlocks() {
+  const unlocked = [];
+  state.skills.forEach((s) => {
+    if (s.stage !== "Locked") return;
+    const p = byId(s.parent_id);
+    if (!p || canUnlockChildren(p)) { s.stage = "Learning"; unlocked.push(s); }
+  });
+  return unlocked;
+}
+
+function intervalLabel(days) {
+  return { 1: "next-day", 3: "3-day", 7: "1-week", 30: "1-month", 90: "3-month" }[days] || `${days}-day`;
+}
+
+function reviewInfo(sk) {
+  if (!sk.last_reviewed_at || sk.stage === "Locked") return { active: false };
+  const long = isLongTerm(sk);
+  const sched = long ? LONG_SCHEDULE : SHORT_SCHEDULE;
+  const step = sk.review_step || 0;
+  if (!long && step >= sched.length) return { active: false };
+  const interval = sched[Math.min(step, sched.length - 1)];
+  const days = (Date.now() - sk.last_reviewed_at) / DAY;
+  return { active: true, due: days >= interval, interval, overdue: days - interval, label: intervalLabel(interval) };
+}
+
+function applySession(skillId, input) {
+  const sk = byId(skillId);
+  const before = sk.stage;
+  const wasLong = isLongTerm(sk);
+  const review = reviewInfo(sk);
+  const { gain, full } = computeGain(sk, input);
+
+  sk.mastery = clamp(sk.mastery + gain, 0, 100);
+  sk.best_test = Math.max(sk.best_test, input.test);
+  sk.best_project = Math.max(sk.best_project, input.project);
+  updateStage(sk);
+
+  if (!sk.last_reviewed_at || (!wasLong && isLongTerm(sk))) {
+    // First session, or just became Reliable: start the review schedule fresh.
+    sk.review_step = 0;
+    sk.last_reviewed_at = Date.now();
+  } else if (review.active) {
+    if (review.due) sk.review_step = (sk.review_step || 0) + 1;
+    sk.last_reviewed_at = Date.now();
+  }
+
+  const transfers = [];
+  if (isLongTerm(sk)) {
+    state.connections.filter((c) => c.from === sk.id).forEach((c) => {
+      const t = byId(c.to);
+      if (!t) return;
+      const g = gain * c.strength * 0.5;
+      t.mastery = clamp(t.mastery + g, 0, 100);
+      updateStage(t);
+      transfers.push({ name: t.name, gain: g });
+    });
+  }
+
+  const unlocked = recomputeUnlocks();
+  state.sessions.push({
+    id: uid("sess"), skill_id: skillId, timestamp: Date.now(),
+    minutes: input.minutes, quality: input.quality, notes: input.notes, explain: input.explain,
+    test: input.test, project: input.project, project_note: input.projectNote,
+    gain, full,
+  });
+  return { gain, before, after: sk.stage, transfers, unlocked };
+}
+
+function rebuildConnections() {
+  const ids = new Set(state.skills.map((s) => s.id));
+  state.connections = LINKS.filter(([a, b]) => ids.has(a) && ids.has(b))
+    .map(([from, to, shared, strength]) => ({ from, to, shared, strength }));
+}
+
+function addGoal(rawLabel) {
+  const label = rawLabel.trim();
+  if (!label) return null;
+  if (state.goals.some((g) => g.label.toLowerCase() === label.toLowerCase())) return null;
+  const libKey = Object.keys(LIB).find((k) => k.toLowerCase() === label.toLowerCase());
+  const lib = libKey ? LIB[libKey] : null;
+  const base = slug(label);
+  let key = base, i = 2;
+  while (goalByKey(key)) key = `${base}_${i++}`;
+  const goal = {
+    key, label: libKey || label,
+    accent: lib ? lib.accent : ACCENTS[state.goals.length % ACCENTS.length],
+    sub: lib ? lib.sub : "Your own goal — add skills as you go",
+  };
+  state.goals.push(goal);
+  if (lib) {
+    lib.skills.forEach(([id, name, parent, d, t, dr]) => state.skills.push(makeSkill(id, name, key, parent, d, t, dr)));
+  } else {
+    state.skills.push(makeSkill(uid(key), `${label} Fundamentals`, key, null,
+      `The starting point for ${label}. Add more skills on top of this as you go.`,
+      `Explain what you're trying to get good at in ${label}, in 90 seconds.`,
+      `Describe one concrete thing you practised and what it taught you.`));
+  }
+  rebuildConnections();
+  state.activeGoal = key;
+  state.dirty = true;
+  return goal;
+}
+
+/* ====================================================================== */
+/* SUGGESTIONS                                                             */
+/* ====================================================================== */
+
+function suggestions() {
+  const out = [];
+
+  const due = state.skills.map((s) => ({ s, r: reviewInfo(s) }))
+    .filter((x) => x.r.active && x.r.due)
+    .sort((a, b) => b.r.overdue - a.r.overdue)[0];
+  if (due) out.push({ icon: "↻", c: "var(--red)", title: "Time to review", text: `“${due.s.name}” is due for its ${due.r.label} check-in. A short session keeps it from fading.`, id: due.s.id });
+
+  const g = activeGoal();
+  const pool = skillsOf(g.key).filter((s) => s.stage === "Learning" || s.stage === "Reliable");
+  if (pool.length) {
+    const lockedKids = (s) => childrenOf(s.id).filter((c) => c.stage === "Locked");
+    const pick = [...pool].sort((a, b) => (lockedKids(b).length * 100 + b.mastery) - (lockedKids(a).length * 100 + a.mastery))[0];
+    const kids = lockedKids(pick);
+    let text;
+    if (!state.sessions.length) text = `Open “${pick.name}” and log your first practice session. Even 15 minutes counts.`;
+    else if (kids.length) {
+      const need = [];
+      if (pick.mastery < 70) need.push(`mastery ${Math.round(pick.mastery)}/70`);
+      if (pick.best_project < 80) need.push(`project ${pick.best_project}/80`);
+      text = `Keep going on “${pick.name}” to unlock “${kids[0].name}”${kids.length > 1 ? ` and ${kids.length - 1} more` : ""}. Still needed: ${need.join(", ")}.`;
+    } else {
+      text = `Keep building “${pick.name}” — next stop is ${pick.stage === "Learning" ? "Reliable" : "Mastered"}.`;
+    }
+    out.push({ icon: "→", c: "var(--teal)", title: state.sessions.length ? "Best next step" : "Start here", text, id: pick.id });
+  }
+
+  if (state.goals.length >= 2) {
+    const stats = state.goals.map((x) => ({ g: x, avg: goalAvg(x.key) })).sort((a, b) => a.avg - b.avg);
+    const lo = stats[0], hi = stats[stats.length - 1];
+    if (hi.avg - lo.avg >= 10) {
+      out.push({ icon: "⚖", c: "var(--gold)", title: "Balance your goals", text: `“${lo.g.label}” is at ${Math.round(lo.avg)}% while “${hi.g.label}” is at ${Math.round(hi.avg)}%. Give it some time this week.`, goal: lo.g.key });
+    }
+  }
+  return out.slice(0, 3);
+}
+
+/* ====================================================================== */
+/* VIEWS                                                                   */
+/* ====================================================================== */
+
+function view() {
+  if (!state.goals.length) return onboardingView() + modalView();
+  const page = state.tab === "tree" ? suggestView() + treeView() : state.tab === "progress" ? progressView() : notesView();
+  return `${headerView()}<main class="wrap">${page}</main>${panelView()}${modalView()}`;
+}
+
+function headerView() {
+  const tabs = [["tree", "Tree"], ["progress", "Progress"], ["notes", "Notes"]];
+  return `<header class="top"><div class="top-in">
+    <div class="brand">${LOGO}<div><b>Tree</b><small>Grow skills one session at a time</small></div></div>
+    <nav class="tabs" aria-label="Sections">${tabs.map(([k, l]) => `<button class="tab ${state.tab === k ? "on" : ""}" data-action="tab" data-tab="${k}" ${state.tab === k ? 'aria-current="page"' : ""}>${l}</button>`).join("")}</nav>
+    <div class="top-actions">
+      <button class="btn" data-action="open-modal" data-modal="add-goal">+ Goal</button>
+      <button class="btn ${state.dirty ? "btn-warn" : ""}" data-action="export" title="Download your progress as a file you can open later">${state.dirty ? "● " : ""}Save file</button>
+    </div>
+  </div></header>`;
+}
+
+function suggestView() {
+  const items = suggestions();
+  if (!items.length) return `<div style="height:20px"></div>`;
+  return `<div class="suggest">${items.map((t) => `
+    <button class="tip" style="--c:${t.c}" ${t.id ? `data-action="open-skill" data-id="${t.id}"` : `data-action="goal" data-goal="${t.goal}"`}>
+      <span class="ico">${t.icon}</span><span><b>${esc(t.title)}</b>${esc(t.text)}</span>
+    </button>`).join("")}</div>`;
+}
+
+function treeView() {
+  const g = activeGoal();
+  const cards = state.goals.map((x) => {
+    const n = skillsOf(x.key).length, avg = goalAvg(x.key);
+    return `<button class="goal-card ${x.key === g.key ? "on" : ""}" style="--accent:${x.accent}" data-action="goal" data-goal="${x.key}">
+      <span class="goal-name">${esc(x.label)}</span>
+      <span class="goal-meta">${plural(n, "skill")} · ${Math.round(avg)}% average</span>${bar(avg, x.accent)}
+    </button>`;
+  }).join("");
+  const roots = skillsOf(g.key).filter((s) => !s.parent_id || !byId(s.parent_id));
+  return `<div class="tree-layout">
+    <aside class="goal-list"><p class="eyebrow">Your goals</p>${cards}</aside>
+    <section style="--accent:${g.accent}">
+      <div class="tree-head">
+        <div><h2>${esc(g.label)}</h2><p class="muted">${esc(g.sub)}</p></div>
+        <button class="btn" data-action="open-modal" data-modal="add-skill">+ Add skill</button>
+      </div>
+      ${roots.length ? `<ul class="tree">${roots.map(nodeView).join("")}</ul>` : `<div class="empty">No skills here yet. Click <b>+ Add skill</b> to start this tree.</div>`}
+      <div class="legend">
+        <span>${badge("Learning")} — practising it</span>
+        <span>${badge("Reliable")} — you can use it confidently</span>
+        <span>${badge("Mastered")} — it's automatic</span>
+      </div>
+    </section>
+  </div>`;
+}
+
+function nodeView(sk) {
+  const kids = childrenOf(sk.id);
+  const locked = sk.stage === "Locked";
+  const parent = byId(sk.parent_id);
+  const r = reviewInfo(sk);
+  return `<li>
+    <button class="node ${locked ? "locked" : ""}" data-action="open-skill" data-id="${sk.id}">
+      <span class="node-top"><span class="node-name">${locked ? LOCK : ""}${esc(sk.name)}</span>${badge(sk.stage)}</span>
+      ${locked
+        ? `<span class="node-sub">Unlocks when “${esc(parent ? parent.name : "")}” reaches 70% mastery and a project score of 80</span>`
+        : `<span class="node-bar">${bar(sk.mastery, STAGES[sk.stage].color)}<span class="pct">${Math.round(sk.mastery)}%</span></span>${r.active && r.due ? `<span class="due">↻ Review due</span>` : ""}`}
+    </button>
+    ${kids.length ? `<ul>${kids.map(nodeView).join("")}</ul>` : ""}
+  </li>`;
+}
+
+function checks(items) {
+  return `<ul class="checks">${items.map(([t, ok, v]) => `<li class="${ok ? "ok" : ""}"><span class="ck">${ok ? "✓" : ""}</span>${t}<span class="v">${v}</span></li>`).join("")}</ul>`;
+}
+
+function milestoneView(sk) {
+  if (sk.stage === "Locked") {
+    const p = byId(sk.parent_id);
+    if (!p) return "";
+    return `<div class="locked-box">
+      <b>${LOCK} This skill is locked</b>
+      <p class="hint">Get “${esc(p.name)}” to these targets to open it up:</p>
+      ${checks([["70% mastery", p.mastery >= 70, `${Math.round(p.mastery)}%`], ["Project score of 80+", p.best_project >= 80, `${p.best_project}`]])}
+      <div style="margin-top:12px"><button class="btn btn-sm" data-action="open-skill" data-id="${p.id}">Go to ${esc(p.name)} →</button></div>
+    </div>`;
+  }
+  const head = `<div class="node-bar" style="margin:0 0 14px">${bar(sk.mastery, STAGES[sk.stage].color)}<span class="pct">${sk.mastery.toFixed(1)}%</span></div>`;
+  if (sk.stage === "Mastered") return head + `<div class="win">✓ You've mastered this skill. Come back for the occasional review to keep it sharp.</div>`;
+  const target = sk.stage === "Learning" ? "Reliable" : "Mastered";
+  const items = target === "Reliable"
+    ? [["70% mastery", sk.mastery >= 70, `${Math.round(sk.mastery)}%`], ["Self-test score of 80+", sk.best_test >= 80, `best ${sk.best_test}`], ["Project score of 80+", sk.best_project >= 80, `best ${sk.best_project}`]]
+    : [["90% mastery", sk.mastery >= 90, `${Math.round(sk.mastery)}%`], ["Self-test score of 90+", sk.best_test >= 90, `best ${sk.best_test}`]];
+  const lockedKids = childrenOf(sk.id).filter((c) => c.stage === "Locked");
+  return `${head}<div class="label">Next milestone: ${STAGES[target].label}</div>${checks(items)}
+    ${lockedKids.length ? `<p class="note-small">Unlocks next: ${lockedKids.map((k) => `<b>${esc(k.name)}</b>`).join(", ")} (needs 70% mastery + project 80).</p>` : ""}`;
+}
+
+function qualityLabel(v) {
+  v = +v;
+  const t = v <= 3 ? "Shaky — lots of gaps" : v <= 6 ? "Okay — got the main idea" : v <= 8 ? "Clear — only small gaps" : "I could teach this";
+  return `${v}/10 · ${t}`;
+}
+
+function previewHTML(sk) {
+  if (sk.mastery >= 99.9) return `Mastery is maxed out here — sessions still count toward reviews and your stats.`;
+  const { gain, full } = computeGain(sk, state.draft);
+  let html = `This session will add <b>+${gain.toFixed(1)}%</b> mastery.`;
+  if (!full) html += `<span class="warn">Write a few sentences in step 3 to earn full credit — right now you'd get 30%.</span>`;
+  const outs = state.connections.filter((c) => c.from === sk.id);
+  if (isLongTerm(sk) && outs.length) {
+    html += `<span class="extra">Bonus: also boosts ${outs.map((c) => `${esc(byId(c.to)?.name)} (+${(gain * c.strength * 0.5).toFixed(1)}%)`).join(", ")}.</span>`;
+  }
+  return html;
+}
+
+function sessionFormView(sk) {
+  const d = state.draft;
+  return `<section class="card form">
+    <h3>Log a practice session</h3>
+    <p class="hint">Only the time is required. The more honestly you fill in, the more useful your tree becomes.</p>
+
+    <div class="step"><span class="num">1</span><div>
+      <div class="field" style="margin:0 0 12px">
+        <label class="label" for="f-minutes">How long did you practise?</label>
+        <div class="chips">${[15, 30, 45, 60, 90].map((m) => `<button class="chip ${String(m) === String(d.minutes) ? "on" : ""}" data-action="minutes" data-min="${m}">${m} min</button>`).join("")}</div>
+        <div class="row" style="align-items:center"><input id="f-minutes" class="input num-input" type="number" min="1" max="600" data-draft="minutes" value="${esc(d.minutes)}"><span class="hint">minutes of focused work</span></div>
+      </div>
+    </div></div>
+
+    <div class="step"><span class="num">2</span><div>
+      <div class="field">
+        <label class="label" for="f-notes">What did you learn? <span class="opt">optional</span></label>
+        <textarea id="f-notes" class="input" data-draft="notes" placeholder="Key ideas, examples, things that confused you…">${esc(d.notes)}</textarea>
+        <div><button class="btn btn-sm" data-action="pick-file" data-target="notes-file">Add notes from a .txt or .md file</button></div>
+      </div>
+    </div></div>
+
+    <div class="step"><span class="num">3</span><div>
+      <div class="field">
+        <label class="label" for="f-explain">Explain it in your own words, without looking at notes</label>
+        <p class="prompt">${esc(sk.drill)}</p>
+        <div><button class="btn btn-sm" id="timer-btn" data-action="timer">⏱ Start a 90-second timer</button></div>
+        <textarea id="f-explain" class="input" data-draft="explain" placeholder="Write it like you're teaching a friend…">${esc(d.explain)}</textarea>
+      </div>
+      <div class="field">
+        <label class="label" for="f-quality">How well could you explain it?</label>
+        <div class="slider-row"><input id="f-quality" type="range" min="1" max="10" step="1" data-draft="quality" value="${esc(d.quality)}"><output id="quality-out">${qualityLabel(d.quality)}</output></div>
+      </div>
+    </div></div>
+
+    <div class="step"><span class="num">4</span><div>
+      <div class="field">
+        <label class="label" for="f-test">Self-test score <span class="opt">optional, 0–100</span></label>
+        <p class="prompt" style="border-left-color:var(--gold)">${esc(sk.test)}</p>
+        <div class="row" style="align-items:center"><input id="f-test" class="input num-input" type="number" min="0" max="100" placeholder="0–100" data-draft="test" value="${esc(d.test)}"><span class="hint">100 = nailed it with no help</span></div>
+      </div>
+    </div></div>
+
+    <div class="step"><span class="num">5</span><div>
+      <div class="field">
+        <label class="label" for="f-project">Project score <span class="opt">optional, 0–100</span></label>
+        <p class="hint">Build or do something real with this skill, then grade it honestly. You need 80+ to unlock what comes next.</p>
+        <div class="row" style="align-items:center"><input id="f-project" class="input num-input" type="number" min="0" max="100" placeholder="0–100" data-draft="project" value="${esc(d.project)}"></div>
+        <input class="input" data-draft="projectNote" placeholder="What did you build or do? (optional)" value="${esc(d.projectNote)}">
+      </div>
+    </div></div>
+
+    <div class="preview" id="preview">${previewHTML(sk)}</div>
+    <button class="btn btn-primary btn-block" data-action="log">Save session</button>
+  </section>`;
+}
+
+function panelView() {
+  const sk = byId(state.selectedId);
+  if (!sk) return "";
+  const g = goalOf(sk);
+  const q = encodeURIComponent(sk.name);
+  const outs = state.connections.filter((c) => c.from === sk.id);
+  const ins = state.connections.filter((c) => c.to === sk.id);
+  const history = state.sessions.filter((s) => s.skill_id === sk.id).sort((a, b) => b.timestamp - a.timestamp);
+  const hasKids = childrenOf(sk.id).length > 0;
+
+  return `<div class="scrim" data-action="close-panel"></div>
+  <aside class="panel ${state._animPanel ? "anim" : ""}" role="dialog" aria-modal="true" aria-label="${esc(sk.name)}" style="--accent:${g.accent}">
+    <div class="panel-head">
+      <div><div class="goal-tag">${esc(g.label)}</div><h2>${esc(sk.name)}</h2>${badge(sk.stage)}</div>
+      <button class="icon-btn" data-action="close-panel" aria-label="Close">×</button>
+    </div>
+    <div class="panel-body">
+      <section>
+        <p class="desc">${esc(sk.description)}</p>
+        <div class="links">
+          <a href="https://www.youtube.com/results?search_query=${q}" target="_blank" rel="noopener noreferrer">Search YouTube ↗</a>
+          <a href="https://www.khanacademy.org/search?page_search_query=${q}" target="_blank" rel="noopener noreferrer">Search Khan Academy ↗</a>
+          <a href="https://www.google.com/search?q=${q}" target="_blank" rel="noopener noreferrer">Search Google ↗</a>
+        </div>
+      </section>
+
+      <section>${milestoneView(sk)}</section>
+
+      ${sk.stage === "Locked" ? "" : sessionFormView(sk)}
+
+      ${outs.length || ins.length ? `<section>
+        <p class="eyebrow">Connected skills</p>
+        ${outs.map((c) => `<p class="conn">→ Boosts <b>${esc(byId(c.to)?.name)}</b> <span>(${esc(c.shared)}) — ${isLongTerm(sk) ? "active" : "starts once this is Reliable"}</span></p>`).join("")}
+        ${ins.map((c) => { const f = byId(c.from); return `<p class="conn">← Boosted by <b>${esc(f?.name)}</b> <span>(${esc(c.shared)}) — ${f && isLongTerm(f) ? "active" : "not active yet"}</span></p>`; }).join("")}
+      </section>` : ""}
+
+      ${history.length ? `<section>
+        <p class="eyebrow">Session history</p>
+        <div class="history">${history.slice(0, 10).map((s) => `<div>
+          <span>${fmtDate(s.timestamp)} · ${s.minutes} min · explained ${s.quality}/10${s.test ? ` · test ${s.test}` : ""}${s.project ? ` · project ${s.project}` : ""}</span>
+          <span class="g">+${s.gain.toFixed(1)}%</span></div>`).join("")}</div>
+      </section>` : ""}
+
+      <section style="border-top:1px solid var(--line-soft);padding-top:16px">
+        ${hasKids
+          ? `<p class="hint">This skill has skills built on top of it, so it can't be removed.</p>`
+          : `<button class="btn btn-sm btn-danger" data-action="remove-skill" data-id="${sk.id}">Remove this skill</button>`}
+      </section>
+    </div>
+  </aside>`;
+}
+
+function progressView() {
+  const mins = state.sessions.reduce((t, s) => t + (+s.minutes || 0), 0);
+  const total = state.skills.length;
+  const unlocked = state.skills.filter((s) => s.stage !== "Locked").length;
+  const reliable = state.skills.filter(isLongTerm).length;
+  const mastered = state.skills.filter((s) => s.stage === "Mastered").length;
+  const st = streak();
+  const stats = [
+    ["Time practised", fmtTime(mins), "across all goals"],
+    ["Sessions logged", state.sessions.length, state.sessions.length ? "nice work" : "log one from the Tree tab"],
+    ["Day streak", st, st ? "keep it going" : "practise today to start one"],
+    ["Skills unlocked", `${unlocked}/${total}`, "open for practice"],
+    ["Reliable or better", reliable, "you can use these confidently"],
+    ["Mastered", mastered, "fully automatic"],
+  ];
+  return `<div class="page-head"><h2>Your progress</h2><p class="muted">A snapshot of everything you've practised.</p></div>
+  <div class="stats">${stats.map(([k, v, s]) => `<div class="stat"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`).join("")}</div>
+  <div class="stack">
+    <div class="card"><h3>Minutes practised per week</h3><p class="hint">The last 8 weeks.</p>${weeklyChart()}</div>
+    <div class="card"><h3>Goals</h3><p class="hint" style="margin-bottom:8px">Average mastery across each goal's skills.</p>
+      ${state.goals.map((g) => { const a = goalAvg(g.key); const n = skillsOf(g.key).length; return `<div class="goal-row">
+        <span class="n" style="color:${g.accent}">${esc(g.label)}<small>${plural(n, "skill")}</small></span>
+        ${bar(a, g.accent)}<span class="pct">${Math.round(a)}%</span>
+        <button class="btn btn-sm btn-ghost" data-action="remove-goal" data-goal="${g.key}" aria-label="Remove ${esc(g.label)}">Remove</button>
+      </div>`; }).join("")}
+    </div>
+    <div class="card"><h3>Keep your progress</h3>
+      <p class="hint" style="margin-bottom:14px">Nothing is stored online or in your browser — closing or refreshing this page clears it. Use <b>Save file</b> to download a copy, and <b>Open file</b> to pick up where you left off.</p>
+      <div class="row" style="flex-wrap:wrap">
+        <button class="btn btn-primary" data-action="export">Save file</button>
+        <button class="btn" data-action="pick-file" data-target="import-file">Open file</button>
+        <button class="btn btn-danger" data-action="reset" style="margin-left:auto">Start over</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function streak() {
+  const days = new Set(state.sessions.map((s) => new Date(s.timestamp).toDateString()));
+  const d = new Date();
+  if (!days.has(d.toDateString())) d.setDate(d.getDate() - 1);
+  let n = 0;
+  while (days.has(d.toDateString())) { n++; d.setDate(d.getDate() - 1); }
+  return n;
+}
+
+function weeklyChart() {
+  const base = new Date(); base.setHours(0, 0, 0, 0); base.setDate(base.getDate() - base.getDay());
+  const weeks = [];
+  for (let i = 7; i >= 0; i--) {
+    const s = new Date(base); s.setDate(s.getDate() - 7 * i);
+    const e = new Date(s); e.setDate(e.getDate() + 7);
+    const m = state.sessions.filter((x) => x.timestamp >= s.getTime() && x.timestamp < e.getTime()).reduce((t, x) => t + (+x.minutes || 0), 0);
+    weeks.push({ label: s.toLocaleDateString(undefined, { month: "short", day: "numeric" }), m });
+  }
+  const max = Math.max(60, ...weeks.map((w) => w.m));
+  const W = 640, H = 190, pad = 10, top = 22, bottom = 26, bw = (W - pad * 2) / weeks.length;
+  const bars = weeks.map((w, i) => {
+    const h = (w.m / max) * (H - top - bottom);
+    const x = pad + i * bw + bw * 0.2, cx = pad + i * bw + bw / 2, y = H - bottom - h;
+    return `<rect x="${x}" y="${H - bottom - 2}" width="${bw * 0.6}" height="2" rx="1" fill="#232733"/>
+      ${w.m ? `<rect x="${x}" y="${y}" width="${bw * 0.6}" height="${h}" rx="4" fill="${i === weeks.length - 1 ? "#4FD1C5" : "#2F6F69"}"/><text x="${cx}" y="${y - 6}" text-anchor="middle">${fmtTime(w.m)}</text>` : ""}
+      <text x="${cx}" y="${H - 8}" text-anchor="middle">${i === weeks.length - 1 ? "This week" : w.label}</text>`;
+  }).join("");
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Minutes practised per week for the last 8 weeks">${bars}</svg>`;
+}
+
+function notesView() {
+  return `<div class="page-head"><h2>Notes</h2><p class="muted">Everything you've written while logging sessions, newest first.</p></div>
+    <div class="notes-filters">
+      <input id="notes-search" class="input" type="search" placeholder="Search your notes…" value="${esc(state.notesQuery)}" aria-label="Search notes">
+      <select id="notes-goal" class="input" aria-label="Filter by goal">
+        <option value="all">All goals</option>
+        ${state.goals.map((g) => `<option value="${g.key}" ${state.notesGoal === g.key ? "selected" : ""}>${esc(g.label)}</option>`).join("")}
+      </select>
+    </div>
+    <div id="notes-results">${notesResults()}</div>`;
+}
+
+function notesResults() {
+  const q = state.notesQuery.trim().toLowerCase();
+  const withText = state.sessions.filter((s) => (s.notes || "").trim() || (s.explain || "").trim() || (s.project_note || "").trim());
+  const list = withText.filter((s) => {
+    const sk = byId(s.skill_id);
+    if (!sk) return false;
+    if (state.notesGoal !== "all" && sk.goal !== state.notesGoal) return false;
+    if (!q) return true;
+    return [sk.name, s.notes, s.explain, s.project_note].some((t) => (t || "").toLowerCase().includes(q));
+  }).sort((a, b) => b.timestamp - a.timestamp);
+
+  if (!list.length) {
+    return `<div class="empty">${withText.length ? "No notes match your search." : "No notes yet. Anything you write while logging a session shows up here."}</div>`;
+  }
+  return list.map((s) => {
+    const sk = byId(s.skill_id), g = goalOf(sk);
+    return `<article class="note">
+      <div class="note-head">
+        <div><button class="linklike" data-action="open-skill" data-id="${sk.id}">${esc(sk.name)}</button><br><small style="color:${g.accent}">${esc(g.label)}</small></div>
+        <small>${fmtDate(s.timestamp)} · ${s.minutes} min</small>
+      </div>
+      ${(s.notes || "").trim() ? `<h4>Notes</h4><p>${esc(s.notes)}</p>` : ""}
+      ${(s.explain || "").trim() ? `<h4>In my own words</h4><p>${esc(s.explain)}</p>` : ""}
+      ${(s.project_note || "").trim() ? `<h4>Project</h4><p>${esc(s.project_note)}</p>` : ""}
+    </article>`;
+  }).join("");
+}
+
+function onboardingView() {
+  const picks = state.onboardPicks;
+  const custom = picks.filter((p) => !LIB[p]);
+  return `<div class="onboard"><div class="onboard-card">
+    <div class="brand">${LOGO}<div><b>Tree</b><small>Grow skills one session at a time</small></div></div>
+    <h1>What do you want to get better at?</h1>
+    <p class="lead">Pick one or more goals. Each becomes a tree of skills that unlock as you practise.</p>
+    <div class="chips">
+      ${Object.keys(LIB).map((l) => `<button class="chip ${picks.includes(l) ? "on" : ""}" data-action="onboard-toggle" data-label="${esc(l)}" aria-pressed="${picks.includes(l)}">${esc(l)}</button>`).join("")}
+      ${custom.map((l) => `<button class="chip on" data-action="onboard-toggle" data-label="${esc(l)}" aria-pressed="true">${esc(l)} ×</button>`).join("")}
+    </div>
+    <div class="row">
+      <input class="input" data-ofield="1" data-enter="onboard-add" placeholder="Or type your own goal, e.g. Cooking" value="${esc(state.onboardCustom)}" aria-label="Custom goal">
+      <button class="btn" data-action="onboard-add">Add</button>
+    </div>
+    <button class="btn btn-primary btn-block" data-action="onboard-start" ${picks.length ? "" : "disabled"}>
+      ${picks.length ? `Start with ${plural(picks.length, "goal")}` : "Pick at least one goal"}
+    </button>
+    <div class="how">
+      <div><b><i>1</i>Pick a skill</b>Open any unlocked skill in your tree.</div>
+      <div><b><i>2</i>Practise & log it</b>Record your time, then explain the idea in your own words.</div>
+      <div><b><i>3</i>Unlock the next</b>Hit the targets and the next skill opens up.</div>
+    </div>
+    <p class="fine">Nothing is stored online or in your browser. Use <b>Save file</b> to download your progress — or <button class="linklike" data-action="pick-file" data-target="import-file">open a saved file</button> to continue.</p>
+  </div></div>`;
+}
+
+function modalView() {
+  const m = state.modal;
+  if (!m) return "";
+  let body = "";
+  if (m.type === "add-goal") {
+    const avail = Object.keys(LIB).filter((l) => !state.goals.some((g) => g.label === l));
+    body = `<div class="modal-head"><h3>Add a goal</h3><button class="icon-btn" data-action="close-modal" aria-label="Close">×</button></div>
+      <p class="lead">Adds a new tree. Your existing progress stays the same.</p>
+      ${avail.length ? `<div class="chips" style="margin-bottom:18px">${avail.map((l) => `<button class="chip" data-action="add-lib-goal" data-label="${esc(l)}">${esc(l)}</button>`).join("")}</div>` : ""}
+      <div class="row">
+        <input class="input" data-mfield="custom" data-enter="add-custom-goal" data-autofocus="1" placeholder="Or type your own goal…" value="${esc(m.custom || "")}" aria-label="Custom goal">
+        <button class="btn btn-primary" data-action="add-custom-goal">Add</button>
+      </div>`;
+  } else if (m.type === "add-skill") {
+    const g = activeGoal();
+    const options = skillsOf(g.key);
+    body = `<div class="modal-head"><h3>Add a skill to ${esc(g.label)}</h3><button class="icon-btn" data-action="close-modal" aria-label="Close">×</button></div>
+      <p class="lead">Only the name is required.</p>
+      <div class="field"><label class="label" for="m-name">Skill name</label><input id="m-name" class="input" data-mfield="name" data-autofocus="1" value="${esc(m.name || "")}" placeholder="e.g. Knife skills"></div>
+      <div class="field"><label class="label" for="m-parent">Builds on</label>
+        <select id="m-parent" class="input" data-mfield="parent">
+          <option value="">Nothing — it's a starting point</option>
+          ${options.map((s) => `<option value="${s.id}" ${m.parent === s.id ? "selected" : ""}>${esc(s.name)}</option>`).join("")}
+        </select>
+        <p class="hint">If it builds on another skill, it stays locked until that one reaches 70% mastery and a project score of 80.</p></div>
+      <div class="field"><label class="label" for="m-desc">Why it matters <span class="opt">optional</span></label><textarea id="m-desc" class="input" data-mfield="description" style="min-height:64px">${esc(m.description || "")}</textarea></div>
+      <div class="field"><label class="label" for="m-test">How you'll test yourself <span class="opt">optional</span></label><input id="m-test" class="input" data-mfield="test" value="${esc(m.test || "")}" placeholder="e.g. Dice an onion evenly in under 2 minutes"></div>
+      <div class="modal-actions"><button class="btn" data-action="close-modal">Cancel</button><button class="btn btn-primary" data-action="save-skill">Add skill</button></div>`;
+  } else if (m.type === "confirm") {
+    body = `<div class="modal-head"><h3>${esc(m.title)}</h3></div>
+      <p class="lead" style="margin-bottom:0">${esc(m.body)}</p>
+      <div class="modal-actions"><button class="btn" data-action="close-modal" data-autofocus="1">Cancel</button><button class="btn ${m.danger ? "btn-danger solid" : "btn-primary"}" data-action="confirm-ok">${esc(m.ok)}</button></div>`;
+  }
+  return `<div class="modal-wrap" data-action="backdrop"><div class="modal ${state._animModal ? "anim" : ""}" role="dialog" aria-modal="true">${body}</div></div>`;
+}
+
+/* ====================================================================== */
+/* RENDER                                                                  */
+/* ====================================================================== */
+
+function render() {
+  const pb = document.querySelector(".panel-body");
+  const keep = pb && !state._resetScroll ? pb.scrollTop : 0;
+  const focusModal = state._animModal;
+  $app.innerHTML = view();
+  const nb = document.querySelector(".panel-body");
+  if (nb) nb.scrollTop = keep;
+  if (focusModal) document.querySelector(".modal [data-autofocus]")?.focus();
+  state._resetScroll = state._animPanel = state._animModal = false;
+  document.body.classList.toggle("noscroll", !!(state.selectedId || state.modal));
+}
+
+let toastTimer;
+function toast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 3400);
+}
+
+let timer = null;
+function stopTimer() { clearInterval(timer); timer = null; }
+function startTimer() {
+  stopTimer();
+  let left = 90;
+  const paint = () => {
+    const b = document.getElementById("timer-btn");
+    if (b) b.textContent = left > 0 ? `⏱ ${left}s left — explain it out loud or in writing` : "⏱ Time's up! Start again";
+  };
+  paint();
+  document.getElementById("f-explain")?.focus();
+  timer = setInterval(() => { left--; paint(); if (left <= 0) stopTimer(); }, 1000);
+}
+
+/* ====================================================================== */
+/* ACTIONS                                                                 */
+/* ====================================================================== */
+
+let pendingConfirm = null;
+function confirmModal(title, body, ok, fn, danger) {
+  pendingConfirm = fn;
+  state.modal = { type: "confirm", title, body, ok, danger };
+  state._animModal = true;
+  render();
+}
+
+function openSkill(id) {
+  if (!byId(id)) return;
+  if (state.selectedId !== id) { state.draft = newDraft(); state._resetScroll = true; stopTimer(); }
+  state._animPanel = !document.querySelector(".panel");
+  state.selectedId = id;
+  render();
+}
+
+function closePanel() { state.selectedId = null; stopTimer(); render(); }
+function closeModal() { state.modal = null; pendingConfirm = null; render(); }
+
+function logSession() {
+  const sk = byId(state.selectedId);
+  if (!sk) return;
+  const d = state.draft;
+  const minutes = Math.round(parseFloat(d.minutes));
+  if (!(minutes >= 1)) { toast("Enter how many minutes you practised."); document.getElementById("f-minutes")?.focus(); return; }
+  const score = (v) => (String(v).trim() === "" ? 0 : clamp(Math.round(parseFloat(v)) || 0, 0, 100));
+  const r = applySession(sk.id, {
+    minutes: clamp(minutes, 1, 600), quality: clamp(parseInt(d.quality) || 5, 1, 10),
+    notes: d.notes, explain: d.explain, test: score(d.test), project: score(d.project), projectNote: d.projectNote,
+  });
+  state.draft = newDraft();
+  state.dirty = true;
+  state._resetScroll = true;
+  stopTimer();
+  render();
+  let msg = r.after !== r.before ? `🎉 “${sk.name}” is now ${STAGES[r.after].label}!` : `Session saved · +${r.gain.toFixed(1)}% mastery`;
+  if (r.unlocked.length) msg += ` Unlocked: ${r.unlocked.map((s) => s.name).join(", ")}.`;
+  toast(msg);
+}
+
+function saveSkill() {
+  const m = state.modal;
+  const name = (m.name || "").trim();
+  if (!name) { toast("Give the skill a name."); document.getElementById("m-name")?.focus(); return; }
+  const g = activeGoal();
+  const sk = makeSkill(uid(g.key), name, g.key, m.parent || null,
+    (m.description || "").trim() || `A skill in your ${g.label} tree.`,
+    (m.test || "").trim() || `Explain “${name}” out loud in 90 seconds, without notes.`,
+    `Explain the core idea of “${name}” as if teaching a beginner.`);
+  state.skills.push(sk);
+  recomputeUnlocks();
+  state.modal = null;
+  state.dirty = true;
+  render();
+  toast(`Added “${name}”${sk.stage === "Locked" ? " (locked until the skill before it is ready)" : ""}`);
+}
+
+function exportFile() {
+  const data = {
+    app: "tree", version: 1, exported_at: new Date().toISOString(),
+    goals: state.goals, skills: state.skills, connections: state.connections, sessions: state.sessions,
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `tree-progress-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+  state.dirty = false;
+  render();
+  toast("Progress file downloaded. Open it here next time to continue.");
+}
+
+function requestImport(file) {
+  const load = async () => {
+    try {
+      const data = JSON.parse(await file.text());
+      if (!Array.isArray(data.goals) || !Array.isArray(data.skills) || !data.goals.length) throw new Error("bad file");
+      state = {
+        ...freshState(),
+        goals: data.goals, skills: data.skills,
+        connections: Array.isArray(data.connections) ? data.connections : [],
+        sessions: Array.isArray(data.sessions) ? data.sessions : [],
+        activeGoal: data.goals[0].key,
+      };
+      render();
+      toast(`Welcome back — loaded ${plural(state.sessions.length, "session")}.`);
+    } catch {
+      toast("That file doesn't look like a Tree progress file.");
+    }
+  };
+  if (state.goals.length && state.dirty) {
+    confirmModal("Replace what's on screen?", "Opening a file replaces your current progress. Anything you haven't saved will be lost.", "Open file", load, true);
+  } else {
+    load();
+  }
+}
+
+const ACTIONS = {
+  tab: (el) => { state.tab = el.dataset.tab; render(); window.scrollTo(0, 0); },
+  goal: (el) => { state.activeGoal = el.dataset.goal; state.tab = "tree"; render(); },
+  "open-skill": (el) => openSkill(el.dataset.id),
+  "close-panel": closePanel,
+  "open-modal": (el) => { state.modal = { type: el.dataset.modal, parent: "" }; state._animModal = true; render(); },
+  "close-modal": closeModal,
+  backdrop: closeModal,
+  minutes: (el) => { state.draft.minutes = el.dataset.min; render(); updatePreview(); },
+  timer: startTimer,
+  log: logSession,
+  export: exportFile,
+  "pick-file": (el) => document.getElementById(el.dataset.target)?.click(),
+  "add-lib-goal": (el) => {
+    const g = addGoal(el.dataset.label);
+    state.modal = null; state.tab = "tree"; render();
+    if (g) toast(`Added “${g.label}”`);
+  },
+  "add-custom-goal": () => {
+    const label = (state.modal.custom || "").trim();
+    if (!label) { toast("Type a goal name first."); return; }
+    const g = addGoal(label);
+    if (!g) { toast("You already have that goal."); return; }
+    state.modal = null; state.tab = "tree"; render();
+    toast(`Added “${g.label}” — add skills to build it out.`);
+  },
+  "save-skill": saveSkill,
+  "confirm-ok": () => {
+    const fn = pendingConfirm;
+    pendingConfirm = null;
+    state.modal = null;
+    render();
+    if (fn) fn();
+  },
+  "remove-skill": (el) => {
+    const sk = byId(el.dataset.id);
+    confirmModal(`Remove “${sk.name}”?`, "This deletes the skill and its session history.", "Remove skill", () => {
+      state.skills = state.skills.filter((s) => s.id !== sk.id);
+      state.sessions = state.sessions.filter((s) => s.skill_id !== sk.id);
+      state.connections = state.connections.filter((c) => c.from !== sk.id && c.to !== sk.id);
+      state.selectedId = null; state.dirty = true;
+      render(); toast("Skill removed.");
+    }, true);
+  },
+  "remove-goal": (el) => {
+    const g = goalByKey(el.dataset.goal);
+    confirmModal(`Remove “${g.label}”?`, "This deletes the goal, all its skills, and their session history.", "Remove goal", () => {
+      const ids = new Set(skillsOf(g.key).map((s) => s.id));
+      state.goals = state.goals.filter((x) => x.key !== g.key);
+      state.skills = state.skills.filter((s) => !ids.has(s.id));
+      state.sessions = state.sessions.filter((s) => !ids.has(s.skill_id));
+      state.connections = state.connections.filter((c) => !ids.has(c.from) && !ids.has(c.to));
+      if (state.activeGoal === g.key) state.activeGoal = state.goals[0]?.key || null;
+      if (state.notesGoal === g.key) state.notesGoal = "all";
+      state.dirty = true;
+      render(); toast("Goal removed.");
+    }, true);
+  },
+  reset: () => confirmModal("Start over?", "This clears every goal, skill and session on screen. Save a file first if you want to keep them.", "Start over", () => {
+    state = freshState(); render(); toast("Cleared. Pick some goals to begin again.");
+  }, true),
+  "onboard-toggle": (el) => {
+    const l = el.dataset.label;
+    state.onboardPicks = state.onboardPicks.includes(l) ? state.onboardPicks.filter((x) => x !== l) : [...state.onboardPicks, l];
+    render();
+  },
+  "onboard-add": () => {
+    const l = state.onboardCustom.trim();
+    if (!l) { toast("Type a goal name first."); return; }
+    if (!state.onboardPicks.some((p) => p.toLowerCase() === l.toLowerCase())) {
+      const lib = Object.keys(LIB).find((k) => k.toLowerCase() === l.toLowerCase());
+      state.onboardPicks.push(lib || l);
+    }
+    state.onboardCustom = "";
+    render();
+    document.querySelector("[data-ofield]")?.focus();
+  },
+  "onboard-start": () => {
+    state.onboardPicks.forEach(addGoal);
+    state.activeGoal = state.goals[0]?.key;
+    state.onboardPicks = [];
+    state.tab = "tree";
+    render();
+    toast("Your tree is ready. Open a skill to log your first session.");
+  },
+};
+
+function updatePreview() {
+  const sk = byId(state.selectedId), el = document.getElementById("preview");
+  if (sk && el) el.innerHTML = previewHTML(sk);
+}
+
+/* ====================================================================== */
+/* EVENTS                                                                  */
+/* ====================================================================== */
+
+document.addEventListener("click", (e) => {
+  const el = e.target.closest("[data-action]");
+  if (!el || el.disabled) return;
+  const a = el.dataset.action;
+  if (a === "backdrop" && e.target !== el) return;
+  ACTIONS[a]?.(el, e);
+});
+
+document.addEventListener("input", (e) => {
+  const t = e.target;
+  if (t.dataset.draft) {
+    state.draft[t.dataset.draft] = t.value;
+    if (t.dataset.draft === "quality") document.getElementById("quality-out").textContent = qualityLabel(t.value);
+    if (t.dataset.draft === "minutes") document.querySelectorAll('[data-action="minutes"]').forEach((c) => c.classList.toggle("on", c.dataset.min === t.value));
+    updatePreview();
+  } else if (t.dataset.mfield && state.modal) {
+    state.modal[t.dataset.mfield] = t.value;
+  } else if (t.dataset.ofield) {
+    state.onboardCustom = t.value;
+  } else if (t.id === "notes-search") {
+    state.notesQuery = t.value;
+    document.getElementById("notes-results").innerHTML = notesResults();
+  }
+});
+
+document.addEventListener("change", async (e) => {
+  const t = e.target;
+  if (t.id === "import-file") {
+    const f = t.files[0]; t.value = "";
+    if (f) requestImport(f);
+  } else if (t.id === "notes-file") {
+    const f = t.files[0]; t.value = "";
+    if (!f) return;
+    const text = (await f.text()).trim();
+    if (!text) { toast("That file looks empty."); return; }
+    state.draft.notes = state.draft.notes.trim() ? `${state.draft.notes}\n\n${text}` : text;
+    render();
+    updatePreview();
+    toast(`Added notes from ${f.name}`);
+  } else if (t.id === "notes-goal") {
+    state.notesGoal = t.value;
+    document.getElementById("notes-results").innerHTML = notesResults();
+  } else if (t.dataset.mfield && state.modal) {
+    state.modal[t.dataset.mfield] = t.value;
+  }
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    if (state.modal) closeModal();
+    else if (state.selectedId) closePanel();
+  } else if (e.key === "Enter" && e.target.dataset && e.target.dataset.enter) {
+    e.preventDefault();
+    ACTIONS[e.target.dataset.enter]?.(e.target);
+  }
+});
+
+window.addEventListener("beforeunload", (e) => {
+  if (state.dirty && state.goals.length) { e.preventDefault(); e.returnValue = ""; }
+});
+
+render();
+</script>
+</body>
+</html>
